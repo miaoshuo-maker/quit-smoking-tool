@@ -94,9 +94,26 @@
     .urge-button { border: 1px solid #e6d6b6; background: white; color: #66532c; min-height: 40px; border-radius: var(--radius); padding: 0 13px; font-weight: 600; }
     .urge-button:hover { background: var(--gold-soft); }
     .urge-count { margin-left: 9px; color: var(--muted); font-size: 12px; }
+    .urge-insight { margin-top: 14px; color: #665b45; font-size: 12px; line-height: 1.5; }
+    .urge-history { margin-top: 14px; border-top: 1px solid var(--line); padding-top: 12px; }
+    .urge-history summary { color: var(--muted); font-size: 12px; cursor: pointer; }
+    .urge-history-list { list-style: none; margin: 10px 0 0; padding: 0; }
+    .urge-history-list li { padding: 9px 0; border-top: 1px solid #f0f1ef; }
+    .urge-history-head { display: flex; justify-content: space-between; gap: 10px; font-size: 12px; }
+    .urge-history-head strong { font-weight: 650; }
+    .urge-history-head time, .urge-history-note { color: var(--muted); }
+    .urge-history-note { margin: 5px 0 0; font-size: 12px; line-height: 1.45; overflow-wrap: anywhere; }
+    .urge-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 0 13px; }
+    .urge-advice { border-left: 3px solid var(--gold); background: #fcf5e6; color: #544a36; padding: 11px 12px; margin: 0 0 17px; border-radius: 0 6px 6px 0; font-size: 13px; line-height: 1.5; }
+    .range-row { display: flex; align-items: center; gap: 11px; }
+    .range-row input { flex: 1; accent-color: var(--green); }
+    .range-value { min-width: 28px; color: var(--green); font-weight: 700; text-align: right; }
+    .field textarea, .field select { width: 100%; border: 1px solid #d8dfd9; border-radius: 6px; background: white; color: var(--ink); padding: 10px 11px; }
+    .field textarea { resize: vertical; min-height: 70px; line-height: 1.45; }
+    .dialog-actions .action { flex: 1; }
     .toast { position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 14px); opacity: 0; pointer-events: none; transition: .2s ease; max-width: calc(100% - 32px); padding: 12px 16px; background: #202922; color: white; border-radius: var(--radius); box-shadow: 0 8px 24px #0002; font-size: 14px; z-index: 10; }
     .toast.show { transform: translate(-50%, 0); opacity: 1; }
-    dialog { border: 0; border-radius: 10px; padding: 0; width: min(440px, calc(100% - 28px)); color: var(--ink); box-shadow: 0 20px 70px #1c2b2140; }
+    dialog { border: 0; border-radius: 10px; padding: 0; width: min(440px, calc(100% - 28px)); max-height: calc(100% - 24px); overflow: auto; color: var(--ink); box-shadow: 0 20px 70px #1c2b2140; }
     dialog::backdrop { background: #17221b66; }
     .dialog-inner { padding: 24px; }
     .dialog-title { margin: 0; font-size: 20px; }
@@ -122,6 +139,9 @@
       .count { font-size: 49px; }
       .actions { gap: 8px; }
       .action { padding: 0 11px; font-size: 13px; }
+    }
+    @media (max-width: 500px) {
+      .urge-fields { grid-template-columns: 1fr; gap: 0; }
     }
     @media (max-width: 370px) {
       .actions { flex-wrap: wrap; }
@@ -178,11 +198,13 @@
         <div class="section-title"><h2>近 7 天</h2><span id="weekCaption">每天的实际记录</span></div>
         <div class="chart" id="weekChart" aria-label="近七天吸烟记录"></div>
         <div class="legend"><span class="legend-mark"></span><span>实际记录</span></div>
+        <div class="urge-insight" id="urgeInsight"></div>
+        <details class="urge-history"><summary>最近的烟瘾记录</summary><div id="urgeHistory"></div></details>
       </article>
       <article class="panel urge-panel">
-        <div class="section-title"><h2><span class="spark" aria-hidden="true">✳</span>烟瘾来了</h2><span class="urge-count" id="urgeCount">今天 0 次挺过</span></div>
-        <p class="urge-message" id="urgeMessage">先停一下，给自己十分钟。冲动会起，也会慢慢落下。</p>
-        <button class="urge-button" id="urgeButton">我挺过了一次</button>
+        <div class="section-title"><h2><span class="spark" aria-hidden="true">✳</span>烟瘾应对</h2><span class="urge-count" id="urgeCount">今天记录 0 次</span></div>
+        <p class="urge-message" id="urgeMessage">记录情境和强度，试试适合这一刻的小行动。</p>
+        <button class="urge-button" id="urgeButton">记录一次烟瘾</button>
       </article>
     </section>
   </main>
@@ -195,6 +217,26 @@
       <label class="field"><span>计划用多少周逐步戒掉</span><input id="weeksInput" type="number" min="2" max="52" step="1" required></label>
       <label class="field"><span>计划开始日期</span><input id="startDateInput" type="date" required></label>
       <div class="dialog-actions"><button class="action" type="button" id="cancelSettings">取消</button><button class="action primary" type="submit">保存计划</button></div>
+    </form>
+  </dialog>
+  <dialog id="urgeDialog">
+    <form class="dialog-inner" id="urgeForm">
+      <h2 class="dialog-title">记录这次烟瘾</h2>
+      <p class="dialog-copy">留意当时的情境，找到对你有用的应对方式。</p>
+      <div class="urge-fields">
+        <label class="field"><span>触发情境</span><select id="urgeTrigger">
+          <option value="work_break">工作间隙</option>
+          <option value="boredom">无聊</option>
+          <option value="after_meal">饭后</option>
+          <option value="stress">压力或情绪</option>
+          <option value="social">和朋友在一起</option>
+          <option value="other">其他</option>
+        </select></label>
+        <label class="field"><span>烟瘾强度（1-10）</span><span class="range-row"><input id="urgeIntensity" type="range" min="1" max="10" value="5"><output class="range-value" id="intensityValue">5</output></span></label>
+      </div>
+      <p class="urge-advice" id="urgeAdvice" aria-live="polite"></p>
+      <label class="field"><span>写一句当时的感受（可选）</span><textarea id="urgeNote" maxlength="120" rows="2" placeholder="例如：手头的事做完了，突然想去抽一支"></textarea></label>
+      <div class="dialog-actions"><button class="action" type="button" id="saveUrgeButton">记下来，继续应对</button><button class="action primary" type="button" id="passUrgeButton">我挺过了</button></div>
     </form>
   </dialog>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
@@ -267,7 +309,8 @@
       document.getElementById('progressRing').style.setProperty('--p', `${percent}%`);
       const finishDate = new Date(fromDateKey(state.startDate).getTime() + totalDays * 86400000);
       document.getElementById('quitDate').textContent = shortDate(finishDate);
-      document.getElementById('urgeCount').textContent = `今天 ${log.resisted} 次挺过`;
+      const todayUrges = (log.urges || []).length;
+      document.getElementById('urgeCount').textContent = `今天记录 ${todayUrges} 次 · 挺过 ${log.resisted || 0} 次`;
       renderWeek(todayKey, target);
     }
     function renderWeek(todayKey, target) {
@@ -283,6 +326,51 @@
         max = Math.max(max, log.smoked || 0);
       }
       host.innerHTML = items.map(item => `<div class="bar-day" title="${item.label}：${item.smoked} 支"><div class="bar-track"><div class="bar-fill ${item.today ? 'today-bar' : ''}" style="height:${Math.max(item.smoked ? 4 : 0, item.smoked / max * 100)}%"></div></div><span class="bar-label">${item.label}</span></div>`).join('');
+      const weekLogs = Object.entries(state.logs).filter(([key]) => dayOffset(key, todayKey) >= 0 && dayOffset(key, todayKey) < 7).map(([, log]) => log);
+      const urges = weekLogs.flatMap(log => log.urges || []);
+      const counts = urges.reduce((all, urge) => { all[urge.trigger] = (all[urge.trigger] || 0) + 1; return all; }, {});
+      const mostCommon = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+      const triggerNames = { work_break: '工作间隙', boredom: '无聊', after_meal: '饭后', stress: '压力或情绪', social: '社交场合', other: '其他' };
+      document.getElementById('urgeInsight').textContent = urges.length
+        ? `近 7 天记录 ${urges.length} 次烟瘾 · 最常见情境：${triggerNames[mostCommon[0]]}`
+        : '记录几次烟瘾后，可看到近 7 天最常见的触发情境。';
+      renderUrgeHistory(triggerNames);
+    }
+    function renderUrgeHistory(triggerNames) {
+      const host = document.getElementById('urgeHistory');
+      const recent = Object.entries(state.logs)
+        .flatMap(([key, log]) => (log.urges || []).map(urge => ({ key, ...urge })))
+        .sort((a, b) => b.time - a.time)
+        .slice(0, 5);
+      host.replaceChildren();
+      if (!recent.length) {
+        const empty = document.createElement('p');
+        empty.className = 'urge-history-note';
+        empty.textContent = '记录后会显示最近几次的情境和感受。';
+        host.append(empty);
+        return;
+      }
+      const list = document.createElement('ul');
+      list.className = 'urge-history-list';
+      recent.forEach(urge => {
+        const item = document.createElement('li');
+        const head = document.createElement('div');
+        head.className = 'urge-history-head';
+        const trigger = document.createElement('strong');
+        trigger.textContent = triggerNames[urge.trigger] || '其他';
+        const time = document.createElement('time');
+        time.textContent = `${shortDate(fromDateKey(urge.key))} · 强度 ${urge.intensity}/10`;
+        head.append(trigger, time);
+        item.append(head);
+        if (urge.note) {
+          const note = document.createElement('p');
+          note.className = 'urge-history-note';
+          note.textContent = urge.note;
+          item.append(note);
+        }
+        list.append(item);
+      });
+      host.append(list);
     }
     function showToast(message) {
       const toast = document.getElementById('toast');
@@ -299,12 +387,45 @@
       if (log.smoked > 0) { log.smoked -= 1; save(); render(); showToast('已撤销上一条记录'); }
       else showToast('今天还没有吸烟记录');
     });
-    const coping = ['喝几口水，慢慢呼吸五次。', '先离开让你想抽烟的地方，走一小段。', '把冲动拖延十分钟，做一件手边的小事。', '给信任的人发条消息，告诉他你正在撑过这一刻。'];
-    document.getElementById('urgeButton').addEventListener('click', () => {
-      const log = todayLog(); log.resisted += 1; save(); render();
-      document.getElementById('urgeMessage').textContent = coping[(log.resisted - 1) % coping.length];
-      showToast('这一次，你陪自己挺过去了。');
+    const urgeDialog = document.getElementById('urgeDialog');
+    const urgeAdvice = {
+      work_break: '把休息留给身体：离开吸烟点，走动或拉伸几分钟，再决定下一步。',
+      boredom: '挑一件三分钟的小事：倒杯水、收拾桌面，或到窗边走一走。',
+      after_meal: '饭后先漱口或散步几分钟，给自己一个新的收尾动作。',
+      stress: '先慢慢呼吸五次，给身体一点缓冲，再处理眼前的事。',
+      social: '先拿杯水，站在不吸烟的人旁边；需要时准备一句婉拒的话。',
+      other: '把决定延后十分钟，做一件手边的小事，再看看烟瘾有没有变化。'
+    };
+    function updateUrgeAdvice() {
+      const trigger = document.getElementById('urgeTrigger').value;
+      document.getElementById('urgeAdvice').textContent = urgeAdvice[trigger];
+    }
+    document.getElementById('urgeTrigger').addEventListener('change', updateUrgeAdvice);
+    document.getElementById('urgeIntensity').addEventListener('input', event => {
+      document.getElementById('intensityValue').textContent = event.target.value;
     });
+    document.getElementById('urgeButton').addEventListener('click', () => {
+      document.getElementById('urgeTrigger').value = state.lastUrgeTrigger || 'work_break';
+      document.getElementById('urgeIntensity').value = '5';
+      document.getElementById('intensityValue').textContent = '5';
+      document.getElementById('urgeNote').value = '';
+      updateUrgeAdvice();
+      urgeDialog.showModal();
+    });
+    function saveUrge(passed) {
+      const log = todayLog();
+      if (!Array.isArray(log.urges)) log.urges = [];
+      const trigger = document.getElementById('urgeTrigger').value;
+      const triggerNames = { work_break: '工作间隙', boredom: '无聊', after_meal: '饭后', stress: '压力或情绪', social: '社交场合', other: '其他' };
+      log.urges.push({ trigger, intensity: Number(document.getElementById('urgeIntensity').value), note: document.getElementById('urgeNote').value.trim(), passed, time: Date.now() });
+      if (passed) log.resisted = (log.resisted || 0) + 1;
+      state.lastUrgeTrigger = trigger;
+      save(); urgeDialog.close(); render();
+      document.getElementById('urgeMessage').textContent = `${triggerNames[trigger]}：${urgeAdvice[trigger]}`;
+      showToast(passed ? '这次烟瘾已记下，你挺过了。' : '这次烟瘾已记下，按自己的节奏继续应对。');
+    }
+    document.getElementById('saveUrgeButton').addEventListener('click', () => saveUrge(false));
+    document.getElementById('passUrgeButton').addEventListener('click', () => saveUrge(true));
     const dialog = document.getElementById('settingsDialog');
     document.getElementById('settingsButton').addEventListener('click', () => {
       document.getElementById('baselineInput').value = state.baseline;
@@ -318,7 +439,7 @@
       state.baseline = Math.max(1, Math.min(100, Number(document.getElementById('baselineInput').value)));
       state.weeks = Math.max(2, Math.min(52, Number(document.getElementById('weeksInput').value)));
       state.startDate = document.getElementById('startDateInput').value || dateKey(new Date());
-      save(); dialog.close(); render(); showToast('新计划从今天开始');
+      save(); dialog.close(); render(); showToast(`计划开始日期：${shortDate(fromDateKey(state.startDate))}`);
     });
     render();
   </script>
