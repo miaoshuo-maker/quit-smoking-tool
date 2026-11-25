@@ -190,9 +190,10 @@
   <dialog id="settingsDialog">
     <form class="dialog-inner" id="settingsForm">
       <h2 class="dialog-title">调整你的计划</h2>
-      <p class="dialog-copy">选择一个适合自己的节奏。保存后从今天开始重新安排。</p>
+      <p class="dialog-copy">选择适合自己的节奏和开始日期。已记录的数据会保留。</p>
       <label class="field"><span>目前平均每天抽几支</span><input id="baselineInput" type="number" min="1" max="100" step="1" required></label>
       <label class="field"><span>计划用多少周逐步戒掉</span><input id="weeksInput" type="number" min="2" max="52" step="1" required></label>
+      <label class="field"><span>计划开始日期</span><input id="startDateInput" type="date" required></label>
       <div class="dialog-actions"><button class="action" type="button" id="cancelSettings">取消</button><button class="action primary" type="submit">保存计划</button></div>
     </form>
   </dialog>
@@ -308,6 +309,7 @@
     document.getElementById('settingsButton').addEventListener('click', () => {
       document.getElementById('baselineInput').value = state.baseline;
       document.getElementById('weeksInput').value = state.weeks;
+      document.getElementById('startDateInput').value = state.startDate;
       dialog.showModal();
     });
     document.getElementById('cancelSettings').addEventListener('click', () => dialog.close());
@@ -315,7 +317,7 @@
       event.preventDefault();
       state.baseline = Math.max(1, Math.min(100, Number(document.getElementById('baselineInput').value)));
       state.weeks = Math.max(2, Math.min(52, Number(document.getElementById('weeksInput').value)));
-      state.startDate = dateKey(new Date());
+      state.startDate = document.getElementById('startDateInput').value || dateKey(new Date());
       save(); dialog.close(); render(); showToast('新计划从今天开始');
     });
     render();
